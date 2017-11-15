@@ -10,8 +10,6 @@ import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Button
 
-import java.util.ArrayList
-
 class MainActivity : AppCompatActivity() {
 
     private val permissions = arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission
@@ -49,17 +47,14 @@ class MainActivity : AppCompatActivity() {
                                             grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 101) {
-            for (i in grantResults.indices) {
-                if (grantResults[i] != PackageManager.PERMISSION_GRANTED) {
-                    if (shouldShowRequestPermissionRationale(permissions[i])) {
-                        AlertDialog.Builder(this)
-                                .setMessage("Your error message here")
-                                .setPositiveButton("Allow") { dialog, which -> requestMultiplePermissions() }
-                                .setNegativeButton("Cancel") { dialog, which -> dialog.dismiss() }
-                                .create()
-                                .show()
-                    }
-                    return
+            if(grantResults.any { it != PackageManager.PERMISSION_GRANTED }){
+                if(permissions.any { shouldShowRequestPermissionRationale(it) }){
+                    AlertDialog.Builder(this)
+                            .setMessage("Your error message here")
+                            .setPositiveButton("Allow") { dialog, which -> requestMultiplePermissions() }
+                            .setNegativeButton("Cancel") { dialog, which -> dialog.dismiss() }
+                            .create()
+                            .show()
                 }
             }
             //all is good, continue flow
