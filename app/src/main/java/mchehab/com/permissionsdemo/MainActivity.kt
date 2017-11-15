@@ -40,12 +40,7 @@ class MainActivity : AppCompatActivity() {
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     private fun requestMultiplePermissions() {
-        val remainingPermissions = ArrayList<String>()
-        for (permission in permissions) {
-            if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
-                remainingPermissions.add(permission)
-            }
-        }
+        val remainingPermissions = permissions.filter { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
         requestPermissions(remainingPermissions.toTypedArray(), 101)
     }
 
