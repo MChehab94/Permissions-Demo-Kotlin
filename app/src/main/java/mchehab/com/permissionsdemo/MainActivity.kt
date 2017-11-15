@@ -5,39 +5,52 @@ import android.annotation.TargetApi
 import android.app.AlertDialog
 import android.content.pm.PackageManager
 import android.os.Build
-import android.os.Environment
+import android.support.annotation.RequiresApi
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Button
 
-import java.io.BufferedWriter
-import java.io.File
-import java.io.FileWriter
-import java.io.IOException
+import java.util.ArrayList
 
 class MainActivity : AppCompatActivity() {
+
+    private val permissions = arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission
+            .ACCESS_FINE_LOCATION, Manifest.permission.READ_CONTACTS)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         val button = findViewById<Button>(R.id.button)
-        button.setOnClickListener({ e ->
+        button.setOnClickListener { e ->
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                    writeToExternalStorage()
+                if (arePermissionsEnabled()) {
+                    //                    permissions granted, continue flow normally
                 } else {
-                    requestWriteExternalStoragePermission()
+                    requestMultiplePermissions()
                 }
             }
-        })
+        }
     }
 
-    private fun requestWriteExternalStoragePermission() {
-        val permissions = arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            requestPermissions(permissions, 101)
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    private fun arePermissionsEnabled(): Boolean {
+        for (permission in permissions) {
+            if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED)
+                return false
         }
+        return true
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    private fun requestMultiplePermissions() {
+        val remainingPermissions = ArrayList<String>()
+        for (permission in permissions) {
+            if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
+                remainingPermissions.add(permission)
+            }
+        }
+        requestPermissions(remainingPermissions.toTypedArray(), 101)
     }
 
     @TargetApi(Build.VERSION_CODES.M)
@@ -45,32 +58,20 @@ class MainActivity : AppCompatActivity() {
                                             grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 101) {
-            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                writeToExternalStorage()
-            } else {
-                if (shouldShowRequestPermissionRationale(permissions[0])) {
-                    AlertDialog.Builder(this)
-                            .setMessage("Your error message here")
-                            .setPositiveButton("Allow") { dialog, which -> requestWriteExternalStoragePermission() }
-                            .setNegativeButton("Cancel") { dialog, which -> dialog.dismiss() }
-                            .create()
-                            .show()
+            for (i in grantResults.indices) {
+                if (grantResults[i] != PackageManager.PERMISSION_GRANTED) {
+                    if (shouldShowRequestPermissionRationale(permissions[i])) {
+                        AlertDialog.Builder(this)
+                                .setMessage("Your error message here")
+                                .setPositiveButton("Allow") { dialog, which -> requestMultiplePermissions() }
+                                .setNegativeButton("Cancel") { dialog, which -> dialog.dismiss() }
+                                .create()
+                                .show()
+                    }
+                    return
                 }
             }
-        }
-    }
-
-    private fun writeToExternalStorage() {
-        val root = Environment.getExternalStorageDirectory()
-        val directory = File(root.absolutePath + "/pathThatYouWant")
-        if (!directory.exists())
-            directory.mkdirs()
-        val file = File(directory, "fileName.txt")
-        try {
-            val writer = BufferedWriter(FileWriter(file))
-            writer.write("this is my text here")
-        } catch (e1: IOException) {
-            e1.printStackTrace()
+            //all is good, continue flow
         }
     }
 }
