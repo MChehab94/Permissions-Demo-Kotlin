@@ -35,11 +35,7 @@ class MainActivity : AppCompatActivity() {
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     private fun arePermissionsEnabled(): Boolean {
-        for (permission in permissions) {
-            if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED)
-                return false
-        }
-        return true
+        return permissions.none { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED};
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
