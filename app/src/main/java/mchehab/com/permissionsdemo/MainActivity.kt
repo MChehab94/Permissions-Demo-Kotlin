@@ -1,19 +1,21 @@
 package mchehab.com.permissionsdemo
 
 import android.Manifest
-import android.annotation.TargetApi
 import android.app.AlertDialog
-import android.content.pm.PackageManager
-import android.os.Build
-import android.support.annotation.RequiresApi
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Button
 
-class MainActivity : AppCompatActivity() {
+import permissions.dispatcher.NeedsPermission
+import permissions.dispatcher.OnNeverAskAgain
+import permissions.dispatcher.OnPermissionDenied
+import permissions.dispatcher.RuntimePermissions
 
-    private val permissions = arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission
-            .ACCESS_FINE_LOCATION, Manifest.permission.READ_CONTACTS)
+@RuntimePermissions
+class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -21,43 +23,48 @@ class MainActivity : AppCompatActivity() {
 
         val button = findViewById<Button>(R.id.button)
         button.setOnClickListener { e ->
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (arePermissionsEnabled()) {
-                    //                    permissions granted, continue flow normally
-                } else {
-                    requestMultiplePermissions()
-                }
-            }
+            requestPermissionsWithPermissionCheck()
         }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
-    private fun arePermissionsEnabled(): Boolean {
-        return permissions.none { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED};
+    @NeedsPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission
+            .ACCESS_FINE_LOCATION, Manifest.permission.READ_CONTACTS)
+    fun requestPermissions() {
+        //do whatever you want here
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
-    private fun requestMultiplePermissions() {
-        val remainingPermissions = permissions.filter { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
-        requestPermissions(remainingPermissions.toTypedArray(), 101)
-    }
-
-    @TargetApi(Build.VERSION_CODES.M)
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>,
                                             grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 101) {
-            if(grantResults.any { it != PackageManager.PERMISSION_GRANTED }){
-                if(permissions.any { shouldShowRequestPermissionRationale(it) }){
-                    AlertDialog.Builder(this)
-                            .setMessage("Your error message here")
-                            .setPositiveButton("Allow") { dialog, which -> requestMultiplePermissions() }
-                            .setNegativeButton("Cancel") { dialog, which -> dialog.dismiss() }
-                            .create()
-                            .show()
+        onRequestPermissionsResult(requestCode, grantResults)
+    }
+
+    @OnPermissionDenied(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission
+            .ACCESS_FINE_LOCATION, Manifest.permission.READ_CONTACTS)
+    fun permissionsDenied() {
+        AlertDialog.Builder(this)
+                .setTitle("Permission denied")
+                .setMessage("Enable permissions")
+                .setPositiveButton("Allow") { _, _ -> requestPermissionsWithPermissionCheck() }
+                .setNegativeButton("Cancel") { dialog, which -> dialog.dismiss() }
+                .create()
+                .show()
+    }
+
+    @OnNeverAskAgain(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission
+            .ACCESS_FINE_LOCATION, Manifest.permission.READ_CONTACTS)
+    fun onNeverAskAgain() {
+        AlertDialog.Builder(this)
+                .setTitle("Title")
+                .setMessage("Message")
+                .setPositiveButton("Ok") { dialog, which ->
+                    val intent = Intent()
+                    intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+                    val uri = Uri.fromParts("package", packageName, null)
+                    intent.data = uri
+                    startActivity(intent)
                 }
-            }
-            //all is good, continue flow
-        }
+                .setNegativeButton("Cancel") { dialog, which -> dialog.dismiss() }.create()
+                .show()
     }
 }
