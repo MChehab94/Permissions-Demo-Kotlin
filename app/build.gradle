@@ -4,6 +4,8 @@ apply plugin: 'kotlin-android'
 
 apply plugin: 'kotlin-android-extensions'
 
+apply plugin: 'kotlin-kapt'
+
 android {
     compileSdkVersion 26
     defaultConfig {
@@ -30,4 +32,6 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:2.2.2'
+    compile'com.github.hotchemi:permissionsdispatcher:3.0.1'
+    kapt 'com.github.hotchemi:permissionsdispatcher-processor:3.0.1'
 }
