@@ -1,6 +1,7 @@
 package mchehab.com.permissionsdemo
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
@@ -33,6 +34,7 @@ class MainActivity : AppCompatActivity() {
         //do whatever you want here
     }
 
+    @SuppressLint("NeedOnRequestPermissionsResult")
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>,
                                             grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
