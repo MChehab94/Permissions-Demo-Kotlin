@@ -1,22 +1,22 @@
 package mchehab.com.permissionsdemo
 
 import android.Manifest
-import android.annotation.SuppressLint
-import android.app.AlertDialog
-import android.content.Intent
-import android.net.Uri
-import android.provider.Settings
+import android.os.Build
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.support.annotation.RequiresApi
+import android.support.v7.app.AlertDialog
 import android.widget.Button
+import com.tbruyelle.rxpermissions2.RxPermissions
 
-import permissions.dispatcher.NeedsPermission
-import permissions.dispatcher.OnNeverAskAgain
-import permissions.dispatcher.OnPermissionDenied
-import permissions.dispatcher.RuntimePermissions
-
-@RuntimePermissions
 class MainActivity : AppCompatActivity() {
+
+    val permissions =  arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest
+            .permission.ACCESS_FINE_LOCATION, Manifest.permission.READ_CONTACTS)
+
+    val rxPermissions by lazy {
+        RxPermissions(this)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,49 +24,29 @@ class MainActivity : AppCompatActivity() {
 
         val button = findViewById<Button>(R.id.button)
         button.setOnClickListener { e ->
-            requestPermissionsWithPermissionCheck()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                requestPermissions()
+            }
         }
     }
 
-    @NeedsPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission
-            .ACCESS_FINE_LOCATION, Manifest.permission.READ_CONTACTS)
-    fun requestPermissions() {
-        //do whatever you want here
-    }
-
-    @SuppressLint("NeedOnRequestPermissionsResult")
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>,
-                                            grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        onRequestPermissionsResult(requestCode, grantResults)
-    }
-
-    @OnPermissionDenied(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission
-            .ACCESS_FINE_LOCATION, Manifest.permission.READ_CONTACTS)
-    fun permissionsDenied() {
-        AlertDialog.Builder(this)
-                .setTitle("Permission denied")
-                .setMessage("Enable permissions")
-                .setPositiveButton("Allow") { _, _ -> requestPermissionsWithPermissionCheck() }
-                .setNegativeButton("Cancel") { dialog, which -> dialog.dismiss() }
-                .create()
-                .show()
-    }
-
-    @OnNeverAskAgain(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission
-            .ACCESS_FINE_LOCATION, Manifest.permission.READ_CONTACTS)
-    fun onNeverAskAgain() {
-        AlertDialog.Builder(this)
-                .setTitle("Title")
-                .setMessage("Message")
-                .setPositiveButton("Ok") { dialog, which ->
-                    val intent = Intent()
-                    intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
-                    val uri = Uri.fromParts("package", packageName, null)
-                    intent.data = uri
-                    startActivity(intent)
+    @RequiresApi(Build.VERSION_CODES.M)
+    private fun requestPermissions(){
+        rxPermissions.request(*permissions)
+                .subscribe { granted ->
+                    if(granted){
+//                        all permissions granted
+                    }else{
+                        if(permissions.any { shouldShowRequestPermissionRationale(it) }){
+                            AlertDialog.Builder(this)
+                                    .setTitle("Eable Permissions")
+                                    .setMessage("Please enable permissions")
+                                    .setPositiveButton("Allow", {dialog, which -> requestPermissions()})
+                                    .setNegativeButton("Cancel", {dialog, which -> dialog.dismiss()})
+                                    .create()
+                                    .show()
+                        }
+                    }
                 }
-                .setNegativeButton("Cancel") { dialog, which -> dialog.dismiss() }.create()
-                .show()
     }
 }
